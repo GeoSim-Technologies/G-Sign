@@ -8,58 +8,107 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a2e;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: #eef0f3;
+      color: #111827;
       min-height: 100vh;
-      padding: 32px 16px 64px;
+    }
+
+    .topbar {
+      background: #ffffff;
+      border-bottom: 1px solid #d8dde4;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #2563eb;
+    }
+
+    .topnav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    .topnav a {
+      color: #4b5563;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    .topnav a.active {
+      color: #2563eb;
+      background: #e7f0ff;
+      font-weight: 600;
+    }
+
+    .page-shell {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 34px 16px 58px;
     }
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      max-width: 700px;
-      margin: 0 auto 32px;
+      margin: 0 auto 26px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
     }
 
     header h1 {
-      font-size: 1.8rem;
+      font-size: 2.15rem;
       font-weight: 700;
       letter-spacing: -0.02em;
+      line-height: 1.15;
     }
 
     header h1 span {
-      color: #2563eb;
+      color: #1f2937;
+      display: block;
+      margin-top: 8px;
+      font-size: 1.15rem;
+      font-weight: 400;
+      letter-spacing: 0;
     }
 
     .view-sign-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 16px;
-      background: #1a1a2e;
+      padding: 10px 16px;
+      background: #2563eb;
       color: #fff;
-      border-radius: 8px;
+      border-radius: 9px;
       text-decoration: none;
-      font-size: 0.875rem;
+      font-size: 0.92rem;
       font-weight: 600;
       white-space: nowrap;
-      transition: background 0.15s;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.16);
+      transition: background 0.15s, transform 0.1s;
     }
-    .view-sign-btn:hover { background: #2563eb; }
+    .view-sign-btn:hover { background: #1d4ed8; }
+    .view-sign-btn:active { transform: translateY(1px); }
 
     /* ── Banner ─────────────────────────────────────────── */
     .banner {
-      max-width: 700px;
-      margin: 0 auto 20px;
-      background: #d1fae5;
-      border: 1px solid #6ee7b7;
+      margin: 0 auto 18px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
       color: #065f46;
-      border-radius: 10px;
-      padding: 12px 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
       font-weight: 600;
       display: none;
     }
@@ -67,21 +116,21 @@
 
     /* ── Card ────────────────────────────────────────────── */
     .card {
-      max-width: 700px;
       margin: 0 auto 20px;
-      background: #fff;
+      background: #ffffff;
+      border: 1px solid #d8dde4;
       border-radius: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-      padding: 28px 28px 24px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      padding: 24px;
     }
 
     .card-title {
-      font-size: 0.7rem;
+      font-size: 0.74rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       color: #6b7280;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     /* ── Inputs ─────────────────────────────────────────── */
@@ -96,12 +145,12 @@
     input[type="text"],
     textarea {
       width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid #d1d5db;
-      border-radius: 8px;
+      padding: 11px 13px;
+      border: 1px solid #d1d7e0;
+      border-radius: 10px;
       font-size: 1rem;
-      color: #1a1a2e;
-      background: #fafafa;
+      color: #111827;
+      background: #ffffff;
       transition: border-color 0.15s, box-shadow 0.15s;
       resize: vertical;
     }
@@ -109,23 +158,24 @@
     textarea:focus {
       outline: none;
       border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.14);
     }
 
     /* ── File upload area ───────────────────────────────── */
     .upload-area {
-      border: 2px dashed #d1d5db;
-      border-radius: 10px;
+      border: 2px dashed #d2d8e1;
+      border-radius: 12px;
       padding: 20px;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
       position: relative;
+      background: #f8fafc;
     }
     .upload-area:hover,
     .upload-area.dragover {
       border-color: #2563eb;
-      background: #eff6ff;
+      background: #edf4ff;
     }
 
     .upload-area input[type="file"] {
@@ -138,8 +188,9 @@
     }
 
     .upload-icon {
-      font-size: 2rem;
+      font-size: 1.95rem;
       margin-bottom: 6px;
+      color: #2563eb;
     }
 
     .upload-label {
@@ -161,8 +212,8 @@
       max-width: 220px;
       object-fit: contain;
       border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      background: #f9f9f9;
+      border: 1px solid #e1e5eb;
+      background: #f8fafc;
       padding: 4px;
     }
 
@@ -192,7 +243,6 @@
 
     /* ── Submit ─────────────────────────────────────────── */
     .submit-wrap {
-      max-width: 700px;
       margin: 0 auto;
     }
 
@@ -202,11 +252,12 @@
       background: #2563eb;
       color: #fff;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 1rem;
       font-weight: 700;
       letter-spacing: 0.01em;
       cursor: pointer;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
       transition: background 0.15s, transform 0.1s;
     }
     button[type="submit"]:hover  { background: #1d4ed8; }
@@ -218,12 +269,37 @@
       color: #9ca3af;
       font-style: italic;
     }
+
+    @media (max-width: 700px) {
+      .topbar {
+        padding: 12px 14px;
+      }
+
+      .brand {
+        font-size: 1.7rem;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      header h1 {
+        font-size: 1.85rem;
+      }
+    }
   </style>
 </head>
 <body>
 
+  <div class="topbar">
+    <div class="brand">GeoSign Technologies</div>
+  </div>
+
+  <main class="page-shell">
+
   <header>
-    <h1>G-Sign <span>Admin</span></h1>
+    <h1>Welcome back, Admin<span>Select a section below to update your sign content.</span></h1>
     <a class="view-sign-btn" href="/sign" target="_blank">&#x1F4FA; View Sign</a>
   </header>
 
@@ -284,6 +360,8 @@
     </div>
 
   </form>
+
+  </main>
 
   <script>
     // ── Show success banner ───────────────────────────────
