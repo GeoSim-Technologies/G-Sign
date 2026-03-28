@@ -27,14 +27,17 @@
     #welcome {
       flex: 0 0 auto;
       width: 100%;
-      padding: 5vh 6vw 3vh;
+      max-height: 20vh;
+      overflow: hidden;
+      padding: 2vh 6vw;
       text-align: center;
-      font-size: clamp(2.5rem, 6vw, 7rem);
+      font-size: 10rem; /* overridden by fitWelcome() */
       font-weight: 700;
       letter-spacing: 0.04em;
       line-height: 1.15;
       text-shadow: 0 2px 24px rgba(255, 255, 255, 0.15);
       word-break: break-word;
+      white-space: normal;
     }
 
     /* ── Main image ──────────────────────────────────────── */
@@ -81,9 +84,33 @@
   <div id="logo-wrap"></div>
 
   <script>
+    // ── Fit welcome text into ≤25vh ─────────────────────
+    function fitWelcome() {
+      const el = document.getElementById('welcome');
+      const maxH = window.innerHeight * 0.20;
+      const maxW = el.clientWidth;
+      let size = 200; // start large, px
+      el.style.fontSize = size + 'px';
+      // Binary-search the largest size that still fits
+      let lo = 40, hi = size;
+      while (hi - lo > 0.5) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = mid + 'px';
+        if (el.scrollHeight <= maxH && el.scrollWidth <= maxW) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      el.style.fontSize = lo + 'px';
+    }
+
+    window.addEventListener('resize', fitWelcome);
+
     function applyData(data) {
       // Message — textContent is XSS-safe
       document.getElementById('welcome').textContent = data.message || 'Welcome!';
+      fitWelcome();
 
       // Main image
       const imgWrap = document.getElementById('image-wrap');
