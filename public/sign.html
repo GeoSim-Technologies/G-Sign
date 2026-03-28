@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G-Sign</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Welcome message ─────────────────────────────────── */
+    #welcome {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 5vh 6vw 3vh;
+      text-align: center;
+      font-size: clamp(2.5rem, 6vw, 7rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      text-shadow: 0 2px 24px rgba(255, 255, 255, 0.15);
+      word-break: break-word;
+    }
+
+    /* ── Main image ──────────────────────────────────────── */
+    #image-wrap {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 2vh 6vw;
+      min-height: 0;
+    }
+
+    #image-wrap img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    /* ── Logo ────────────────────────────────────────────── */
+    #logo-wrap {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 2vh 6vw 4vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #logo-wrap img {
+      max-height: 10vh;
+      max-width: 30vw;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="welcome">Welcome!</div>
+
+  <div id="image-wrap"></div>
+
+  <div id="logo-wrap"></div>
+
+  <script>
+    function applyData(data) {
+      // Message — textContent is XSS-safe
+      document.getElementById('welcome').textContent = data.message || 'Welcome!';
+
+      // Main image
+      const imgWrap = document.getElementById('image-wrap');
+      if (data.image) {
+        let img = imgWrap.querySelector('img');
+        if (!img) {
+          img = document.createElement('img');
+          img.alt = 'Sign image';
+          imgWrap.innerHTML = '';
+          imgWrap.appendChild(img);
+        }
+        if (img.src !== location.origin + data.image) {
+          img.src = data.image;
+        }
+      } else {
+        imgWrap.innerHTML = '';
+      }
+
+      // Logo
+      const logoWrap = document.getElementById('logo-wrap');
+      if (data.logo) {
+        let logo = logoWrap.querySelector('img');
+        if (!logo) {
+          logo = document.createElement('img');
+          logo.alt = 'Logo';
+          logoWrap.innerHTML = '';
+          logoWrap.appendChild(logo);
+        }
+        if (logo.src !== location.origin + data.logo) {
+          logo.src = data.logo;
+        }
+      } else {
+        logoWrap.innerHTML = '';
+      }
+    }
+
+    // ── Load initial data ─────────────────────────────────
+    fetch('/api/data')
+      .then(r => r.json())
+      .then(applyData)
+      .catch(console.error);
+
+    // ── Listen for instant updates via SSE ────────────────
+    const evtSource = new EventSource('/api/events');
+    evtSource.onmessage = e => {
+      try { applyData(JSON.parse(e.data)); } catch (_) {}
+    };
+
+    // ── Fallback poll every 30 s if SSE drops ────────────
+    setInterval(() => {
+      fetch('/api/data')
+        .then(r => r.json())
+        .then(applyData)
+        .catch(console.error);
+    }, 30_000);
+  </script>
+</body>
+</html>
