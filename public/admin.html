@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>G-Sign Admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -241,6 +242,87 @@
     }
     .clear-check input { accent-color: #dc2626; cursor: pointer; }
 
+    .mode-wrap {
+      margin-top: 14px;
+      border: 1px solid #d8dde4;
+      border-radius: 10px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .mode-help {
+      font-size: 0.84rem;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+
+    .mode-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .mode-options label {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .mode-options input {
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .crop-tool {
+      margin-top: 14px;
+      border: 1px solid #d8dde4;
+      border-radius: 10px;
+      padding: 12px;
+      background: #f8fafc;
+      display: none;
+    }
+
+    .crop-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .crop-help {
+      font-size: 0.84rem;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+
+    .crop-stage {
+      width: 100%;
+      max-height: 320px;
+      min-height: 220px;
+      overflow: hidden;
+      border: 1px solid #d8dde4;
+      border-radius: 8px;
+      background: #e5e7eb;
+    }
+
+    .crop-stage img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .crop-meta {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
     /* ── Submit ─────────────────────────────────────────── */
     .submit-wrap {
       margin: 0 auto;
@@ -323,6 +405,36 @@
         <div class="upload-label">JPG, PNG, GIF, WebP &mdash; max 10 MB</div>
         <input type="file" name="image" id="image-input" accept="image/*">
       </div>
+
+      <div class="mode-wrap">
+        <label for="image-mode-fit">Image display mode</label>
+        <div class="mode-help">Fit keeps the whole image visible. Crop fills the image region while trimming overflow and still reserves space for message and logo.</div>
+        <div class="mode-options">
+          <label>
+            <input type="radio" name="imageMode" id="image-mode-fit" value="fit" checked>
+            Fit
+          </label>
+          <label>
+            <input type="radio" name="imageMode" value="crop">
+            Crop
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" name="cropX" id="crop-x">
+      <input type="hidden" name="cropY" id="crop-y">
+      <input type="hidden" name="cropWidth" id="crop-width">
+      <input type="hidden" name="cropHeight" id="crop-height">
+
+      <div class="crop-tool" id="crop-tool">
+        <div class="crop-label">Crop Selector (1920x756 target)</div>
+        <div class="crop-help">Drag to move and resize the crop area. This maps directly to the sign's middle display region.</div>
+        <div class="crop-stage">
+          <img id="crop-image" alt="Crop selector preview">
+        </div>
+        <div class="crop-meta" id="crop-meta">Crop: --</div>
+      </div>
+
       <div class="preview-wrap" id="image-preview-wrap" style="display:none">
         <img id="image-preview" src="" alt="Current image">
         <div class="preview-meta">
@@ -363,7 +475,80 @@
 
   </main>
 
+  <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
   <script>
+    const CROP_ASPECT = 1920 / 756;
+    let cropper = null;
+
+    function setCropHiddenValues(crop) {
+      document.getElementById('crop-x').value = crop.x.toFixed(2);
+      document.getElementById('crop-y').value = crop.y.toFixed(2);
+      document.getElementById('crop-width').value = crop.width.toFixed(2);
+      document.getElementById('crop-height').value = crop.height.toFixed(2);
+      document.getElementById('crop-meta').textContent =
+        `Crop: x ${Math.round(crop.x)}, y ${Math.round(crop.y)}, w ${Math.round(crop.width)}, h ${Math.round(crop.height)}`;
+    }
+
+    function clearCropHiddenValues() {
+      document.getElementById('crop-x').value = '';
+      document.getElementById('crop-y').value = '';
+      document.getElementById('crop-width').value = '';
+      document.getElementById('crop-height').value = '';
+      document.getElementById('crop-meta').textContent = 'Crop: --';
+    }
+
+    function destroyCropper() {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+    }
+
+    function hasValidCrop(crop) {
+      return crop &&
+        Number.isFinite(crop.x) &&
+        Number.isFinite(crop.y) &&
+        Number.isFinite(crop.width) &&
+        Number.isFinite(crop.height) &&
+        crop.width > 0 &&
+        crop.height > 0;
+    }
+
+    function initCropTool(src, existingCrop) {
+      const tool = document.getElementById('crop-tool');
+      const cropImage = document.getElementById('crop-image');
+      if (!window.Cropper || !src) {
+        tool.style.display = 'none';
+        destroyCropper();
+        clearCropHiddenValues();
+        return;
+      }
+
+      tool.style.display = 'block';
+      destroyCropper();
+      cropImage.src = src;
+      cropImage.onload = () => {
+        cropper = new Cropper(cropImage, {
+          aspectRatio: CROP_ASPECT,
+          viewMode: 1,
+          dragMode: 'move',
+          background: false,
+          autoCropArea: 1,
+          responsive: true,
+          ready() {
+            if (hasValidCrop(existingCrop)) {
+              cropper.setData(existingCrop);
+            }
+            setCropHiddenValues(cropper.getData(true));
+          },
+          crop() {
+            if (!cropper) return;
+            setCropHiddenValues(cropper.getData(true));
+          }
+        });
+      };
+    }
+
     // ── Show success banner ───────────────────────────────
     if (new URLSearchParams(location.search).get('saved') === '1') {
       document.getElementById('saved-banner').classList.add('visible');
@@ -380,10 +565,18 @@
           document.getElementById('message').value = data.message;
         }
 
+        // Image mode
+        const mode = data.imageMode === 'crop' ? 'crop' : 'fit';
+        const modeEl = document.querySelector(`input[name="imageMode"][value="${mode}"]`);
+        if (modeEl) modeEl.checked = true;
+
         // Image
         if (data.image) {
           document.getElementById('image-preview').src = data.image;
           document.getElementById('image-preview-wrap').style.display = 'flex';
+          initCropTool(data.image, data.crop);
+        } else {
+          initCropTool('', null);
         }
 
         // Logo
@@ -402,6 +595,10 @@
         const url = URL.createObjectURL(file);
         document.getElementById(previewImgId).src = url;
         document.getElementById(previewWrapId).style.display = 'flex';
+
+        if (inputId === 'image-input') {
+          initCropTool(url, null);
+        }
       });
     }
 
@@ -414,6 +611,22 @@
       el.addEventListener('dragover',  e => { e.preventDefault(); el.classList.add('dragover'); });
       el.addEventListener('dragleave', ()  => el.classList.remove('dragover'));
       el.addEventListener('drop',      e => { e.preventDefault(); el.classList.remove('dragover'); });
+    });
+
+    document.querySelector('form').addEventListener('submit', () => {
+      if (cropper) {
+        setCropHiddenValues(cropper.getData(true));
+      } else {
+        clearCropHiddenValues();
+      }
+    });
+
+    document.querySelector('input[name="clearImage"]').addEventListener('change', function () {
+      if (this.checked) {
+        destroyCropper();
+        document.getElementById('crop-tool').style.display = 'none';
+        clearCropHiddenValues();
+      }
     });
   </script>
 </body>

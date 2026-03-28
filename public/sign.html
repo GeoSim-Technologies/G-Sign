@@ -20,19 +20,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
     }
 
     /* ── Welcome message ─────────────────────────────────── */
     #welcome {
       flex: 0 0 auto;
       width: 100%;
-      max-height: 20vh;
+      height: 20vh;
       overflow: hidden;
-      padding: 2vh 6vw;
+      padding: 2vh 4vw;
       text-align: center;
       font-size: 10rem; /* overridden by fitWelcome() */
       font-weight: 700;
+      font-style: italic;
       letter-spacing: 0.04em;
       line-height: 1.15;
       text-shadow: 0 2px 24px rgba(255, 255, 255, 0.15);
@@ -42,34 +43,62 @@
 
     /* ── Main image ──────────────────────────────────────── */
     #image-wrap {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 2vh 6vw;
+      height: 70vh;
+      padding: 1vh 4vw;
       min-height: 0;
+      position: relative;
+      overflow: hidden;
     }
 
     #image-wrap img {
-      max-width: 100%;
-      max-height: 100%;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
       border-radius: 4px;
+    }
+
+    #image-wrap.mode-fit {
+      padding: 1vh 4vw;
+    }
+
+    #image-wrap.mode-fit img {
+      position: static;
+      left: auto;
+      top: auto;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    #image-wrap.mode-crop {
+      padding: 0;
+    }
+
+    #image-wrap.mode-crop img {
+      position: absolute;
+      object-fit: unset;
+      border-radius: 0;
+      max-width: none;
+      max-height: none;
     }
 
     /* ── Logo ────────────────────────────────────────────── */
     #logo-wrap {
       flex: 0 0 auto;
       width: 100%;
-      padding: 2vh 6vw 4vh;
+      height: 10vh;
+      padding: 1vh 4vw;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     #logo-wrap img {
-      max-height: 10vh;
+      max-height: 100%;
       max-width: 30vw;
       object-fit: contain;
     }
@@ -84,6 +113,70 @@
   <div id="logo-wrap"></div>
 
   <script>
+    let currentData = null;
+
+    function hasValidCrop(crop) {
+      return crop &&
+        Number.isFinite(crop.x) &&
+        Number.isFinite(crop.y) &&
+        Number.isFinite(crop.width) &&
+        Number.isFinite(crop.height) &&
+        crop.width > 0 &&
+        crop.height > 0;
+    }
+
+    function applyImageLayout() {
+      if (!currentData) return;
+
+      const imgWrap = document.getElementById('image-wrap');
+      const img = imgWrap.querySelector('img');
+      if (!img) return;
+
+      const imageMode = (currentData.imageMode === 'crop' || currentData.imageMode === 'stretch') ? 'crop' : 'fit';
+
+      if (imageMode === 'fit') {
+        img.style.position = 'static';
+        img.style.left = 'auto';
+        img.style.top = 'auto';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        return;
+      }
+
+      const crop = currentData.crop;
+      if (!hasValidCrop(crop) || !img.naturalWidth || !img.naturalHeight) {
+        // Fallback when there is no saved crop geometry.
+        img.style.position = 'static';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        return;
+      }
+
+      const wrapWidth = imgWrap.clientWidth;
+      const wrapHeight = imgWrap.clientHeight;
+      if (!wrapWidth || !wrapHeight) return;
+
+      const safeWidth = Math.min(crop.width, img.naturalWidth);
+      const safeHeight = Math.min(crop.height, img.naturalHeight);
+      const safeX = Math.max(0, Math.min(crop.x, img.naturalWidth - safeWidth));
+      const safeY = Math.max(0, Math.min(crop.y, img.naturalHeight - safeHeight));
+
+      const scale = Math.max(wrapWidth / safeWidth, wrapHeight / safeHeight);
+      const drawWidth = img.naturalWidth * scale;
+      const drawHeight = img.naturalHeight * scale;
+      const offsetX = -safeX * scale + (wrapWidth - safeWidth * scale) / 2;
+      const offsetY = -safeY * scale + (wrapHeight - safeHeight * scale) / 2;
+
+      img.style.position = 'absolute';
+      img.style.objectFit = 'unset';
+      img.style.width = `${drawWidth}px`;
+      img.style.height = `${drawHeight}px`;
+      img.style.left = `${offsetX}px`;
+      img.style.top = `${offsetY}px`;
+    }
+
     // ── Fit welcome text into ≤25vh ─────────────────────
     function fitWelcome() {
       const el = document.getElementById('welcome');
@@ -105,15 +198,24 @@
       el.style.fontSize = lo + 'px';
     }
 
-    window.addEventListener('resize', fitWelcome);
+    window.addEventListener('resize', () => {
+      fitWelcome();
+      applyImageLayout();
+    });
 
     function applyData(data) {
+      currentData = data;
+
       // Message — textContent is XSS-safe
       document.getElementById('welcome').textContent = data.message || 'Welcome!';
       fitWelcome();
 
       // Main image
       const imgWrap = document.getElementById('image-wrap');
+      const imageMode = (data.imageMode === 'crop' || data.imageMode === 'stretch') ? 'crop' : 'fit';
+      imgWrap.classList.remove('mode-fit', 'mode-crop');
+      imgWrap.classList.add(`mode-${imageMode}`);
+
       if (data.image) {
         let img = imgWrap.querySelector('img');
         if (!img) {
@@ -124,7 +226,9 @@
         }
         if (img.src !== location.origin + data.image) {
           img.src = data.image;
+          img.onload = applyImageLayout;
         }
+        applyImageLayout();
       } else {
         imgWrap.innerHTML = '';
       }

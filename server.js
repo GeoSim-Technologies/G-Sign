@@ -17,12 +17,33 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      const stored = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      const hasValidCrop =
+        stored.crop &&
+        Number.isFinite(stored.crop.x) &&
+        Number.isFinite(stored.crop.y) &&
+        Number.isFinite(stored.crop.width) &&
+        Number.isFinite(stored.crop.height) &&
+        stored.crop.width > 0 &&
+        stored.crop.height > 0;
+
+      return {
+        message: typeof stored.message === 'string' ? stored.message : 'Welcome!',
+        image: stored.image || null,
+        logo: stored.logo || null,
+        imageMode: (stored.imageMode === 'crop' || stored.imageMode === 'stretch') ? 'crop' : 'fit',
+        crop: hasValidCrop ? {
+          x: Number(stored.crop.x),
+          y: Number(stored.crop.y),
+          width: Number(stored.crop.width),
+          height: Number(stored.crop.height)
+        } : null
+      };
     }
   } catch (e) {
     console.error('Failed to load data.json:', e.message);
   }
-  return { message: 'Welcome!', image: null, logo: null };
+  return { message: 'Welcome!', image: null, logo: null, imageMode: 'fit', crop: null };
 }
 
 function saveData(data) {
@@ -103,16 +124,25 @@ app.post(
   upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]),
   (req, res) => {
     const data = loadData();
+    const uploadedNewImage = !!req.files?.image?.[0];
 
     if (typeof req.body.message === 'string') {
       data.message = req.body.message.trim();
     }
 
+    if (req.body.imageMode === 'crop') {
+      data.imageMode = 'crop';
+    } else {
+      data.imageMode = 'fit';
+    }
+
     if (req.body.clearImage === 'on') {
       data.image = null;
+      data.crop = null;
     } else if (req.files?.image?.[0]) {
       const fname = req.files.image[0].filename;
       data.image = `/uploads/${fname}?t=${Date.now()}`;
+      data.crop = null;
     }
 
     if (req.body.clearLogo === 'on') {
@@ -120,6 +150,30 @@ app.post(
     } else if (req.files?.logo?.[0]) {
       const fname = req.files.logo[0].filename;
       data.logo = `/uploads/${fname}?t=${Date.now()}`;
+    }
+
+    const cropX = Number(req.body.cropX);
+    const cropY = Number(req.body.cropY);
+    const cropWidth = Number(req.body.cropWidth);
+    const cropHeight = Number(req.body.cropHeight);
+    const hasCropData =
+      Number.isFinite(cropX) &&
+      Number.isFinite(cropY) &&
+      Number.isFinite(cropWidth) &&
+      Number.isFinite(cropHeight) &&
+      cropWidth > 0 &&
+      cropHeight > 0;
+
+    if (hasCropData) {
+      data.crop = {
+        x: cropX,
+        y: cropY,
+        width: cropWidth,
+        height: cropHeight
+      };
+    } else if (uploadedNewImage) {
+      // New image without crop metadata should not reuse an old crop rectangle.
+      data.crop = null;
     }
 
     saveData(data);
