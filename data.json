@@ -5,8 +5,8 @@
   "imageMode": "crop",
   "crop": {
     "x": 0,
-    "y": 24,
-    "width": 900,
+    "y": 0,
+    "width": 899,
     "height": 354
   }
 }
