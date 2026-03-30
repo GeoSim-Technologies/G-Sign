@@ -132,7 +132,7 @@
       const img = imgWrap.querySelector('img');
       if (!img) return;
 
-      const imageMode = (currentData.imageMode === 'crop' || currentData.imageMode === 'stretch') ? 'crop' : 'fit';
+      const imageMode = currentData.imageMode === 'crop' ? 'crop' : 'fit';
 
       if (imageMode === 'fit') {
         img.style.position = 'static';
@@ -212,7 +212,7 @@
 
       // Main image
       const imgWrap = document.getElementById('image-wrap');
-      const imageMode = (data.imageMode === 'crop' || data.imageMode === 'stretch') ? 'crop' : 'fit';
+      const imageMode = data.imageMode === 'crop' ? 'crop' : 'fit';
       imgWrap.classList.remove('mode-fit', 'mode-crop');
       imgWrap.classList.add(`mode-${imageMode}`);
 
